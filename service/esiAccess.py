@@ -77,12 +77,18 @@ class EsiAccess:
 
     @property
     def sso_url(self):
-        if self.settings.get("ssoMode") == EsiSsoMode.CUSTOM:
+        mode = self.settings.get("ssoMode")
+        if mode == EsiSsoMode.CUSTOM:
             return "https://login.eveonline.com"
-        return "https://www.pyfa.io"
+        elif mode == EsiSsoMode.SERENITY:
+            return "https://login.evepc.163.com/v2"
+        else:
+            return "https://www.pyfa.io"
 
     @property
     def esi_url(self):
+        if self.settings.get("ssoMode") == EsiSsoMode.SERENITY:
+            return "https://esi.evepc.163.com"
         return "https://esi.evetech.net"
 
     @property
@@ -124,7 +130,8 @@ class EsiAccess:
     def getLoginURI(self, redirect=None):
         self.state = str(uuid.uuid4())
 
-        if self.settings.get("ssoMode") == EsiSsoMode.AUTO:
+        mode = self.settings.get("ssoMode")
+        if mode == EsiSsoMode.AUTO:
             args = {
                 'state': self.state,
                 'pyfa_version': config.version,
@@ -139,7 +146,7 @@ class EsiAccess:
                 self.oauth_authorize,
                 urlencode(args)
             )
-        else:
+        elif mode == EsiSsoMode.CUSTOM:
             return '%s?response_type=%s&redirect_uri=%s&client_id=%s%s%s' % (
                 self.oauth_authorize,
                 'code',
@@ -148,6 +155,17 @@ class EsiAccess:
                 '&scope=%s' % '+'.join(scopes) if scopes else '',
                 '&state=%s' % self.state
             )
+        else:
+            return '%s?response_type=%s&redirect_uri=%s&client_id=%s%s%s%s' % (
+                self.oauth_authorize,
+                'code',
+                "https%3A%2F%2Fesi.evepc.163.com%2Fui%2Foauth2-redirect.html",
+                "bc90aa496a404724a93f41b4f4e97761",
+                '&scope=%s' % '+'.join(scopes) if scopes else '',
+                '&state=%s' % self.state,
+                "&realm=ESI&device_id=aiav56gqddbpt4xk-d"
+            )
+
 
     def get_oauth_header(self, token):
         """ Return the Bearer Authorization header required in oauth calls
@@ -199,16 +217,19 @@ class EsiAccess:
             'data': params,
             'url': self.oauth_token,
         }
+        if self.settings.get("ssoMode") == EsiSsoMode.SERENITY:
+            del request_params["headers"]
 
         return request_params
 
     def get_access_token_request_params(self, code):
-        return self.__make_token_request_parameters(
-            {
-                'grant_type': 'authorization_code',
-                'code': code,
-            }
-        )
+        params = {
+            'grant_type': 'authorization_code',
+            'code': code,
+        }
+        if self.settings.get("ssoMode") == EsiSsoMode.SERENITY:
+            params["client_id"] = "bc90aa496a404724a93f41b4f4e97761"
+        return self.__make_token_request_parameters(params)
 
     def auth(self, code):
         request_data = self.get_access_token_request_params(code)

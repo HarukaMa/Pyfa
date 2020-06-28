@@ -36,6 +36,7 @@ class EsiSsoMode(IntEnum):
     """
     AUTO = 0
     CUSTOM = 1
+    SERENITY = 2
 
 
 class EsiEndpoints(Enum):

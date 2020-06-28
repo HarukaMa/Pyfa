@@ -7,6 +7,7 @@ import base64
 import json
 import config
 import webbrowser
+import re
 
 import eos.db
 from service.const import EsiLoginMethod, EsiSsoMode
@@ -136,16 +137,19 @@ class Esi(EsiAccess):
     def handleLogin(self, message):
 
         # we already have authenticated stuff for the auto mode
-        if self.settings.get('ssoMode') == EsiSsoMode.AUTO:
+        mode = self.settings.get('ssoMode')
+        if mode == EsiSsoMode.AUTO:
             ssoInfo = message['SSOInfo'][0]
             auth_response = json.loads(base64.b64decode(ssoInfo))
-        else:
+        elif mode == EsiSsoMode.CUSTOM:
             # otherwise, we need to fetch the information
             auth_response = self.auth(message['code'][0])
+        else:
+            auth_response = self.auth(re.findall(r"code=(.*)&state=", message["SSOInfo"][0])[0])
 
         res = self._session.get(
             self.oauth_verify,
-            headers=self.get_oauth_header(auth_response['access_token'])
+            headers=self.get_oauth_header(auth_response['access_token']),
         )
         if res.status_code != 200:
             raise APIException(

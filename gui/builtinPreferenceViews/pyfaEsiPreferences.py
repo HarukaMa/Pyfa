@@ -44,11 +44,12 @@ class PFEsiPref(PreferenceView):
                                       "to allow for character login. Use this if having issues with the local server.")
 
         self.rbSsoMode = wx.RadioBox(panel, -1, "SSO Mode", wx.DefaultPosition, wx.DefaultSize,
-                                     ['pyfa.io', 'Custom application'], 1, wx.RA_SPECIFY_COLS)
+                                     ['pyfa.io', 'Custom application', "Serenity"], 1, wx.RA_SPECIFY_COLS)
         self.rbSsoMode.SetItemToolTip(0, "This options routes SSO Logins through pyfa.io, allowing you to easily login "
                                          "without any configuration. When in doubt, use this option.")
         self.rbSsoMode.SetItemToolTip(1, "This option goes through EVE SSO directly, but requires more configuration. Use "
                                          "this is pyfa.io is blocked for some reason, or if you do not wish to route data throguh pyfa.io.")
+        self.rbSsoMode.SetItemToolTip(2, "This option uses Serenity SSO server using ESI webpage as application.")
 
         self.rbMode.SetSelection(self.settings.get('loginMode'))
         self.rbSsoMode.SetSelection(self.settings.get('ssoMode'))
@@ -164,11 +165,17 @@ class PFEsiPref(PreferenceView):
         self.ToggleSSOMode(event.GetInt())
 
     def ToggleSSOMode(self, mode):
-        if mode:
+        if mode == 1:
             self.stSetID.Enable()
             self.inputClientID.Enable()
             self.stSetSecret.Enable()
             self.inputClientSecret.Enable()
+            self.rbMode.Disable()
+        elif mode == 2:
+            self.stSetID.Disable()
+            self.inputClientID.Disable()
+            self.stSetSecret.Disable()
+            self.inputClientSecret.Disable()
             self.rbMode.Disable()
         else:
             self.stSetID.Disable()
