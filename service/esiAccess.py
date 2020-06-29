@@ -189,12 +189,15 @@ class EsiAccess:
             'refresh_token': refreshToken,
         }
 
-        if self.settings.get('ssoMode') == EsiSsoMode.AUTO:
+        mode = self.settings.get('ssoMode')
+        if mode == EsiSsoMode.AUTO:
             # data is all we really need, the rest is handled automatically by pyfa.io
             return {
                 'data': data,
                 'url': self.oauth_token,
             }
+        elif mode == EsiSsoMode.SERENITY:
+            data["client_id"] = "bc90aa496a404724a93f41b4f4e97761"
 
         # otherwise, we need to make the token with the client keys
         return self.__make_token_request_parameters(data)
